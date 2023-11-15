@@ -102,8 +102,8 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
   private val anchorMatrix = FloatArray(maxAllocationSize)
   private val queuedSingleTaps = ArrayBlockingQueue<MotionEvent>(maxAllocationSize)
 
-  private var scaleVar = 1.0f
-  private var rotationAngle = 0.0f
+  private val scaleVarMap : MutableMap<Mode, Float> = mutableMapOf()
+  private val rotationAngleMap : MutableMap<Mode, Float> = mutableMapOf()
   private var x1: Float = 0.0f
   private var y1: Float = 0.0f
 
@@ -112,6 +112,14 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
 
     super.onCreate(savedInstanceState)
     setContentView(R.layout.activity_main)
+
+    scaleVarMap.put(Mode.VIKING, 1.0f)
+    scaleVarMap.put(Mode.CANNON, 1.0f)
+    scaleVarMap.put(Mode.TARGET, 1.0f)
+
+    rotationAngleMap.put(Mode.VIKING, 0.0f)
+    rotationAngleMap.put(Mode.CANNON, 0.0f)
+    rotationAngleMap.put(Mode.TARGET, 0.0f)
 
     trackingStateHelper = TrackingStateHelper(this@MainActivity)
     displayRotationHelper = DisplayRotationHelper(this@MainActivity)
@@ -204,14 +212,14 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
 
         if (abs(deltaX) < 30)
         {
-          rotationAngle = rotationAngle + deltaX
+          rotationAngleMap[mode] = rotationAngleMap[mode]!! + deltaX
         }
 
         if (abs(deltaY) < 30)
         {
-          if (scaleVar + deltaY * 0.001f > 0.1f)
+          if (scaleVarMap[mode]!! + deltaY * 0.001f > 0.1f)
           {
-            scaleVar = scaleVar + deltaY * 0.001f
+            scaleVarMap[mode] = scaleVarMap[mode]!! + deltaY * 0.001f
           }
         }
 
@@ -390,7 +398,8 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
         drawObject(
             vikingObject,
             vikingAttachment,
-            Mode.VIKING.scaleFactor,
+            Mode.VIKING.scaleFactor * scaleVarMap.get(Mode.VIKING)!!,
+            rotationAngleMap[Mode.VIKING]!!,
             projectionMatrix,
             viewMatrix,
             lightIntensity
@@ -399,7 +408,8 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
         drawObject(
             cannonObject,
             cannonAttachment,
-            Mode.CANNON.scaleFactor,
+            Mode.CANNON.scaleFactor * scaleVarMap.get(Mode.CANNON)!!,
+            rotationAngleMap[Mode.CANNON]!!,
             projectionMatrix,
             viewMatrix,
             lightIntensity
@@ -408,7 +418,8 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
         drawObject(
             targetObject,
             targetAttachment,
-            Mode.TARGET.scaleFactor,
+            Mode.TARGET.scaleFactor * scaleVarMap.get(Mode.TARGET)!!,
+            rotationAngleMap[Mode.TARGET]!!,
             projectionMatrix,
             viewMatrix,
             lightIntensity
@@ -434,6 +445,7 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
       objectRenderer: ObjectRenderer,
       planeAttachment: PlaneAttachment?,
       scaleFactor: Float,
+      rotationAngle : Float,
       projectionMatrix: FloatArray,
       viewMatrix: FloatArray,
       lightIntensity: FloatArray
@@ -446,7 +458,7 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
       Matrix.setRotateM(rotationMatrix, 0, angle, 0f, 1.0f, 0.0f)
 
       // Update and draw the model
-      objectRenderer.updateModelMatrix(anchorMatrix, scaleFactor * scaleVar)
+      objectRenderer.updateModelMatrix(anchorMatrix, scaleFactor)
       objectRenderer.draw(viewMatrix, projectionMatrix, rotationMatrix, lightIntensity)
     }
   }
